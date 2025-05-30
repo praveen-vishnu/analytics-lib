@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router } from '@angular/router';
+import { RouterOutlet, Router, RouterLink } from '@angular/router';
 import { TrackAnalyticsModule, TrackAnalyticsService } from 'track-analytics';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, TrackAnalyticsModule],
+  imports: [CommonModule, RouterOutlet, RouterLink, TrackAnalyticsModule],
   template: `
     <div class="container">
       <header>
