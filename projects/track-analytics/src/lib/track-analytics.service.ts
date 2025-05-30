@@ -9,6 +9,12 @@ export interface AnalyticsEvent {
   elementType: string;
   timestamp: number;
   metadata?: Record<string, any>;
+  path?: string;
+  pageTitle?: string;
+  elementId?: string;
+  elementClasses?: string[];
+  elementText?: string;
+  elementAttributes?: Record<string, string>;
 }
 
 export interface UserSession {
@@ -22,6 +28,12 @@ export interface UserSession {
     title: string;
     timestamp: number;
   }[];
+  userAgent: string;
+  screenSize: {
+    width: number;
+    height: number;
+  };
+  deviceType: string;
 }
 
 @Injectable({
@@ -85,7 +97,9 @@ export class TrackAnalyticsService {
       element: elementInfo,
       elementType: 'custom',
       timestamp: Date.now(),
-      metadata
+      metadata,
+      path: window.location.pathname,
+      pageTitle: document.title
     };
 
     this.currentSession.events.push(event);
@@ -145,7 +159,13 @@ export class TrackAnalyticsService {
       sessionId: this.generateSessionId(),
       startTime: Date.now(),
       events: [],
-      pageViews: []
+      pageViews: [],
+      userAgent: navigator.userAgent,
+      screenSize: {
+        width: window.innerWidth,
+        height: window.innerHeight
+      },
+      deviceType: this.getDeviceType()
     };
 
     this.sessionSubject.next(this.currentSession);
@@ -154,30 +174,64 @@ export class TrackAnalyticsService {
   }
 
   private setupEventListeners(): void {
-    // Track clicks
+    // Track clicks with enhanced context
     fromEvent(document, 'click').subscribe((event: Event) => {
       const target = event.target as HTMLElement;
       if (!target) return;
 
       const elementType = target.tagName.toLowerCase();
-      let elementInfo = '';
-
-      // Try to get meaningful info about the element
-      if (target.id) {
-        elementInfo = `#${target.id}`;
-      } else if (target.className && typeof target.className === 'string') {
-        elementInfo = `.${target.className.split(' ')[0]}`;
-      } else if (target.textContent) {
-        elementInfo = target.textContent.trim().substring(0, 50);
-      } else {
-        elementInfo = elementType;
-      }
+      const elementInfo = this.getElementInfo(target);
+      const elementAttributes = this.getElementAttributes(target);
 
       this.trackEvent('click', elementInfo, {
         elementType,
         path: window.location.pathname,
         x: (event as MouseEvent).clientX,
-        y: (event as MouseEvent).clientY
+        y: (event as MouseEvent).clientY,
+        elementId: target.id,
+        elementClasses: Array.from(target.classList),
+        elementText: target.textContent?.trim(),
+        elementAttributes
+      });
+    });
+
+    // Track form interactions
+    fromEvent(document, 'submit').subscribe((event: Event) => {
+      const target = event.target as HTMLFormElement;
+      if (!target) return;
+
+      this.trackEvent('form_submit', target.id || target.name || 'unnamed-form', {
+        formId: target.id,
+        formName: target.name,
+        formAction: target.action,
+        formMethod: target.method
+      });
+    });
+
+    // Track input changes
+    fromEvent(document, 'input').subscribe((event: Event) => {
+      const target = event.target as HTMLInputElement;
+      if (!target) return;
+
+      this.trackEvent('input_change', target.id || target.name || 'unnamed-input', {
+        inputType: target.type,
+        inputId: target.id,
+        inputName: target.name,
+        inputValue: target.value
+      });
+    });
+
+    // Track scroll events
+    fromEvent(window, 'scroll').subscribe(() => {
+      const scrollY = window.scrollY;
+      const scrollX = window.scrollX;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const scrollPercentage = (scrollY / (scrollHeight - window.innerHeight)) * 100;
+
+      this.trackEvent('scroll', 'page-scroll', {
+        scrollY,
+        scrollX,
+        scrollPercentage: Math.round(scrollPercentage)
       });
     });
 
@@ -264,5 +318,36 @@ export class TrackAnalyticsService {
       console.error('Failed to load analytics session:', e);
       this.initSession();
     }
+  }
+
+  private getElementInfo(element: HTMLElement): string {
+    if (element.id) {
+      return `#${element.id}`;
+    } else if (element.className && typeof element.className === 'string') {
+      return `.${element.className.split(' ')[0]}`;
+    } else if (element.textContent) {
+      return element.textContent.trim().substring(0, 50);
+    } else {
+      return element.tagName.toLowerCase();
+    }
+  }
+
+  private getElementAttributes(element: HTMLElement): Record<string, string> {
+    const attributes: Record<string, string> = {};
+    Array.from(element.attributes).forEach(attr => {
+      attributes[attr.name] = attr.value;
+    });
+    return attributes;
+  }
+
+  private getDeviceType(): string {
+    const ua = navigator.userAgent;
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+      return 'tablet';
+    }
+    if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+      return 'mobile';
+    }
+    return 'desktop';
   }
 }

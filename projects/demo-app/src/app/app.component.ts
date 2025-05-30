@@ -12,10 +12,10 @@ import { TrackAnalyticsModule, TrackAnalyticsService } from 'track-analytics';
       <header>
         <h1>TrackAnalytics Demo</h1>
         <nav>
-          <a routerLink="/" ngxTrackElement trackId="home-nav">Home</a>
-          <a routerLink="/products" ngxTrackElement trackId="products-nav">Products</a>
-          <a routerLink="/about" ngxTrackElement trackId="about-nav">About</a>
-          <a routerLink="/contact" ngxTrackElement trackId="contact-nav">Contact</a>
+          <a routerLink="/">Home</a>
+          <a routerLink="/products">Products</a>
+          <a routerLink="/about">About</a>
+          <a routerLink="/contact">Contact</a>
         </nav>
       </header>
 
@@ -26,35 +26,27 @@ import { TrackAnalyticsModule, TrackAnalyticsService } from 'track-analytics';
           <h2>Demo Actions</h2>
 
           <div class="card-container">
-            <div class="card" ngxTrackElement trackId="card-1" [trackMetadata]="{cardId: 1}">
+            <div class="card">
               <h3>Card 1</h3>
               <p>This is a tracked card element.</p>
-              <button ngxTrackElement trackId="card-1-button">Click Me</button>
+              <button>Click Me</button>
             </div>
 
-            <div class="card" ngxTrackElement trackId="card-2" [trackMetadata]="{cardId: 2}">
+            <div class="card">
               <h3>Card 2</h3>
               <p>This is another tracked card element.</p>
-              <button ngxTrackElement trackId="card-2-button">Click Me</button>
+              <button>Click Me</button>
             </div>
 
-            <div class="card" ngxTrackElement trackId="card-3" [trackMetadata]="{cardId: 3}">
+            <div class="card">
               <h3>Card 3</h3>
               <p>This is yet another tracked card element.</p>
-              <button ngxTrackElement trackId="card-3-button">Click Me</button>
+              <button>Click Me</button>
             </div>
           </div>
 
           <div class="custom-events">
             <h3>Custom Events</h3>
-            <button (click)="trackCustomEvent('button-click', 'Custom Button')">
-              Track Custom Event
-            </button>
-
-            <button (click)="startNewSession()">
-              Start New Session
-            </button>
-
             <button (click)="showSessionData()">
               Log Session Data
             </button>
@@ -166,22 +158,7 @@ export class AppComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // You can subscribe to analytics events
-    this.analyticsService.getEvents().subscribe(events => {
-      // You can process events here if needed
-      // console.log('Events updated:', events);
-    });
-  }
-
-  trackCustomEvent(type: string, element: string): void {
-    this.analyticsService.trackEvent(type, element, {
-      custom: true,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  startNewSession(): void {
-    this.analyticsService.startNewSession();
+    // The library now handles all event tracking automatically
   }
 
   showSessionData(): void {
